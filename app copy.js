@@ -5,6 +5,9 @@ const User = require('./models/users');
 const bodyParser = require('body-parser');
 // act like middleware
 const jsonParser = bodyParser.json();
+var crypto = require('crypto');
+let key = "password";
+let algo = 'aes256';
 
 // JWT
 const jwt = require('jsonwebtoken');
@@ -22,33 +25,26 @@ mongoose.connect("mongodb+srv://mongo_user:0W5JrhO8PEzmWRNg@cluster0.ptwwm.mongo
 // })
 
 app.post('/register', jsonParser, function (req, res) {
-
+    var cipher = crypto.createCipheriv(algo, key);
+    var cipher = crypto.createCipher(algo, key);
+    var encrypted = cipher.update(req.body.password, 'utf8', 'hex');
+    +cipher.final('hex');
+    
     const data = new User({
-        _id: new mongoose.Types.ObjectId,
+        _id : new mongoose.Types.ObjectId,
         name: req.body.name,
         email: req.body.email,
         address: req.body.address,
         password: req.body.password
+        // password: encrypted
     });
 
     data.save().then((result) => {
-        jwt.sign({ result }, jwtKey, { expiresIn: "300s" }, (err, token) => {
-            res.status(201).json({ token })
+        // res.status(201).json(result)
+        jwt.sign({result}, jwtKey, {expiresIn:"300s"}, (err, token)=>{
+            res.status(201).json({token})
         })
     }).catch((err) => console.warn(err));
-});
-
-app.post('/login', jsonParser, function (req, res) {
-    User.findOne({ email: req.body.email }).then((data) => {
-        if (req.body.password == data.password) {
-            jwt.sign({ data }, jwtKey, { expiresIn: "300s" }, (err, token) => {
-                res.status(200).json({ token })
-            })
-        } else {
-            console.warn("data not matched");
-            res.status(500).json("data not matched")
-        }
-    })
 })
 
 app.listen(4000);
