@@ -17,10 +17,31 @@ mongoose.connect("mongodb+srv://mongo_user:0W5JrhO8PEzmWRNg@cluster0.ptwwm.mongo
     console.warn("connected");
 });
 
-// app.get('/', function (req, res) {
-//     res.end("hello");
-// })
+app.get('/user', verifyToken, function (req, res) {
+    User.find().then((result) => {
+        res.status(200).json(result);
+    })
+})
 
+// middelware function
+function verifyToken(req, res, next) {
+    const bearerHeader = req.headers['authorization'];
+    if (typeof bearerHeader !== 'undefined') {
+        const bearer = bearerHeader.split(' ');
+        req.token = bearer[1];
+        jwt.verify(req.token, jwtKey, (err, authData) => {
+            if (err) {
+                res.json({ result: err });
+            } else {
+                next();
+            }
+        })
+    } else {
+        res.send({ "result": "token not provided" });
+    }
+}
+
+// registeration api
 app.post('/register', jsonParser, function (req, res) {
 
     const data = new User({
@@ -38,6 +59,7 @@ app.post('/register', jsonParser, function (req, res) {
     }).catch((err) => console.warn(err));
 });
 
+// login api
 app.post('/login', jsonParser, function (req, res) {
     User.findOne({ email: req.body.email }).then((data) => {
         if (req.body.password == data.password) {
